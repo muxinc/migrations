@@ -38,15 +38,15 @@ func (m *Migration) String() string {
 //   - 1 - migration version;
 //   - initialize_db - comment.
 func Register(fns ...func(DB) error) error {
-	return registerMigration(false, fns...)
+	return registerMigration(false, 0, fns...)
 }
 
 // RegisterTx is just like Register but marks the migration to be executed inside a transaction.
 func RegisterTx(fns ...func(DB) error) error {
-	return registerMigration(true, fns...)
+	return registerMigration(true, 0, fns...)
 }
 
-func registerMigration(transactional bool, fns ...func(DB) error) error {
+func registerMigration(transactional bool, explictVersion int64, fns ...func(DB) error) error {
 	var up, down func(DB) error
 	switch len(fns) {
 	case 0:
@@ -61,9 +61,14 @@ func registerMigration(transactional bool, fns ...func(DB) error) error {
 	}
 
 	file := migrationFile()
-	version, err := extractVersionGo(file)
-	if err != nil {
-		return err
+
+	version := explictVersion
+	if version == 0 {
+		var err error
+		version, err = extractVersionGo(file)
+		if err != nil {
+			return err
+		}
 	}
 
 	g.migrations = append(g.migrations, Migration{
@@ -179,6 +184,13 @@ func newSQLMigration(path string) func(DB) error {
 
 func MustRegister(fns ...func(DB) error) {
 	err := Register(fns...)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func MustRegisterVersion(version int64, fns ...func(DB) error) {
+	err := registerMigration(false, version, fns...)
 	if err != nil {
 		panic(err)
 	}

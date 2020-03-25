@@ -5,3 +5,5 @@ require (
 	github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a // indirect
 	mellium.im/sasl v0.2.1 // indirect
 )
+
+go 1.13
